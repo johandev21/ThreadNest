@@ -1,0 +1,14 @@
+{
+  "name": "threadnest",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:server": "bun --filter @threadnest/server dev",
+    "dev:web": "bun --filter @threadnest/web dev",
+    "db:push": "bun --filter @threadnest/server db:push",
+    "db:seed": "bun --filter @threadnest/server db:seed",
+    "typecheck": "bun --filter '*' typecheck"
+  }
+}

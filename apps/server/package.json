@@ -1,0 +1,26 @@
+{
+  "name": "@threadnest/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "bun run src/db/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-auth": "^1.7.1",
+    "drizzle-orm": "^0.45.2",
+    "elysia": "^1.4.29"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^13.0.3",
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^7.0.2"
+  }
+}
