@@ -1,5 +1,5 @@
-import { Feed } from "@/components/feed";
-import { NestHeader } from "@/components/nest-header";
+import { PostFeed } from "@/features/posts";
+import { NestHeader } from "@/features/nests";
 
 export default async function NestPage({
   params,
@@ -11,7 +11,7 @@ export default async function NestPage({
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6">
       <NestHeader slug={slug} />
-      <Feed nest={slug} />
+      <PostFeed nest={slug} />
     </div>
   );
 }

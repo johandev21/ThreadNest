@@ -1,6 +1,5 @@
-import { Feed } from "@/components/feed";
-import { NestSidebar } from "@/components/nest-sidebar";
-import { NestChips } from "@/components/nest-chips";
+import { PostFeed } from "@/features/posts";
+import { NestSidebar, NestChips } from "@/features/nests";
 
 export default function HomePage() {
   return (
@@ -9,7 +8,7 @@ export default function HomePage() {
         <div className="lg:hidden">
           <NestChips />
         </div>
-        <Feed />
+        <PostFeed />
       </div>
       <aside className="hidden lg:block lg:pt-12">
         <NestSidebar />
