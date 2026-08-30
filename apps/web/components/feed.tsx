@@ -8,11 +8,10 @@ import { FeatherIcon } from "lucide-react";
 import type { Sort } from "@/lib/api";
 import { useFeed } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCard } from "@/components/post-card";
+import { PostCardSkeleton } from "@/components/post-card-skeleton";
 
 const SORTS: Sort[] = ["hot", "new", "top"];
 
@@ -35,7 +34,7 @@ function FeedContent({ nest }: { nest?: string }) {
   const feed = useFeed(sort, nest);
   const posts = feed.data?.pages.flatMap((page) => page.items) ?? [];
 
-  function handleSortChange(value: Sort) {
+  function handleSortChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("sort", value);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -43,7 +42,7 @@ function FeedContent({ nest }: { nest?: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Tabs value={sort} onValueChange={(value) => handleSortChange(value as Sort)}>
+      <Tabs value={sort} onValueChange={handleSortChange}>
         <TabsList>
           <TabsTrigger value="hot">Hot</TabsTrigger>
           <TabsTrigger value="new">New</TabsTrigger>
@@ -53,24 +52,7 @@ function FeedContent({ nest }: { nest?: string }) {
       {feed.isLoading ? (
         <FeedSkeleton />
       ) : posts.length === 0 ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <FeatherIcon />
-            </EmptyMedia>
-            <EmptyTitle>No posts yet</EmptyTitle>
-            <EmptyDescription>
-              {nest
-                ? `Be the first to post in n/${nest}.`
-                : "Nothing here yet. Start the conversation!"}
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button render={<Link href="/submit" />} nativeButton={false} variant="outline" size="sm">
-              Create a post
-            </Button>
-          </EmptyContent>
-        </Empty>
+        <EmptyFeed nest={nest} />
       ) : (
         <>
           <div className="flex flex-col gap-3">
@@ -79,14 +61,10 @@ function FeedContent({ nest }: { nest?: string }) {
             ))}
           </div>
           {feed.hasNextPage ? (
-            <Button
-              variant="ghost"
-              className="w-full border border-dashed border-border text-muted-foreground"
-              disabled={feed.isFetchingNextPage}
+            <LoadMoreButton
+              isLoading={feed.isFetchingNextPage}
               onClick={() => feed.fetchNextPage()}
-            >
-              {feed.isFetchingNextPage ? "Loading..." : "Load more"}
-            </Button>
+            />
           ) : null}
         </>
       )}
@@ -94,24 +72,52 @@ function FeedContent({ nest }: { nest?: string }) {
   );
 }
 
+function EmptyFeed({ nest }: { nest?: string }) {
+  const description = nest
+    ? `Be the first to post in n/${nest}.`
+    : "Nothing here yet. Start the conversation!";
+
+  return (
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <FeatherIcon />
+        </EmptyMedia>
+        <EmptyTitle>No posts yet</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button render={<Link href="/submit" />} nativeButton={false} variant="outline" size="sm">
+          Create a post
+        </Button>
+      </EmptyContent>
+    </Empty>
+  );
+}
+
+interface LoadMoreButtonProps {
+  isLoading: boolean;
+  onClick: () => void;
+}
+
+function LoadMoreButton({ isLoading, onClick }: LoadMoreButtonProps) {
+  return (
+    <Button
+      variant="ghost"
+      className="w-full border border-dashed border-border text-muted-foreground"
+      disabled={isLoading}
+      onClick={onClick}
+    >
+      {isLoading ? "Loading..." : "Load more"}
+    </Button>
+  );
+}
+
 function FeedSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       {[0, 1, 2].map((index) => (
-        <Card key={index} size="sm" className="flex-row items-stretch gap-0 py-0">
-          <div className="flex flex-col items-center px-2 py-3.5">
-            <div className="flex flex-col items-center gap-1.5 rounded-full bg-muted/70 px-1.5 py-2">
-              <Skeleton className="size-4 rounded-full" />
-              <Skeleton className="h-3 w-5" />
-              <Skeleton className="size-4 rounded-full" />
-            </div>
-          </div>
-          <div className="flex flex-1 flex-col gap-2.5 py-4 pr-4">
-            <Skeleton className="h-3 w-44" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-        </Card>
+        <PostCardSkeleton key={index} />
       ))}
     </div>
   );

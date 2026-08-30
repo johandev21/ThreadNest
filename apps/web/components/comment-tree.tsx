@@ -13,6 +13,24 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { VoteButtons } from "@/components/vote-buttons";
 
+export function CommentTree({
+  postId,
+  comments,
+}: {
+  postId: string;
+  comments: Comment[];
+}) {
+  const tree = useMemo(() => buildTree(comments), [comments]);
+
+  return (
+    <div className="flex flex-col gap-6">
+      {tree.map((node) => (
+        <CommentNodeView key={node.comment.id} node={node} postId={postId} />
+      ))}
+    </div>
+  );
+}
+
 interface CommentNode {
   comment: Comment;
   children: CommentNode[];
@@ -43,18 +61,6 @@ function buildTree(comments: Comment[]): CommentNode[] {
   return roots;
 }
 
-export function CommentTree({ postId, comments }: { postId: string; comments: Comment[] }) {
-  const tree = useMemo(() => buildTree(comments), [comments]);
-
-  return (
-    <div className="flex flex-col gap-6">
-      {tree.map((node) => (
-        <CommentNodeView key={node.comment.id} node={node} postId={postId} />
-      ))}
-    </div>
-  );
-}
-
 function CommentNodeView({
   node,
   postId,
@@ -70,7 +76,7 @@ function CommentNodeView({
   const createComment = useCreateComment(postId);
   const deleteComment = useDeleteComment(postId);
 
-  async function submitReply() {
+  async function handleReplySubmit() {
     const content = replyContent.trim();
     if (!content) return;
     try {
@@ -82,82 +88,35 @@ function CommentNodeView({
     }
   }
 
+  function handleReplyCancel() {
+    setReplyOpen(false);
+    setReplyContent("");
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="-mx-2 flex flex-col gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-muted/40">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Avatar size="sm">
-            <AvatarFallback>{comment.authorName.slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <span className="font-medium text-foreground">{comment.authorName}</span>
-          <span aria-hidden>·</span>
-          <span suppressHydrationWarning>{timeago(comment.createdAt)}</span>
-        </div>
+        <CommentHeader
+          authorName={comment.authorName}
+          createdAt={comment.createdAt}
+        />
         <p className="whitespace-pre-wrap text-sm leading-relaxed">{comment.content}</p>
-        <div className="flex items-center gap-1">
-          <VoteButtons
-            compact
-            targetType="comment"
-            targetId={comment.id}
-            score={comment.score}
-            myVote={comment.myVote}
-          />
-          <Button
-            variant="ghost"
-            size="xs"
-            className="text-muted-foreground"
-            onClick={() => setReplyOpen((open) => !open)}
-          >
-            Reply
-          </Button>
-          {isAuthor ? (
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label="Delete comment"
-              disabled={deleteComment.isPending}
-              onClick={() => deleteComment.mutate(comment.id)}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <Trash2Icon />
-            </Button>
-          ) : null}
-        </div>
+        <CommentActions
+          comment={comment}
+          isAuthor={isAuthor}
+          isDeleting={deleteComment.isPending}
+          onToggleReply={() => setReplyOpen((open) => !open)}
+          onDelete={() => deleteComment.mutate(comment.id)}
+        />
         {replyOpen ? (
-          <div className="flex flex-col gap-2">
-            <Textarea
-              value={replyContent}
-              onChange={(event) => setReplyContent(event.target.value)}
-              placeholder={`Reply to ${comment.authorName}...`}
-              aria-label="Write a reply"
-            />
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setReplyOpen(false);
-                  setReplyContent("");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                disabled={!replyContent.trim() || createComment.isPending}
-                onClick={submitReply}
-              >
-                {createComment.isPending ? (
-                  <>
-                    <Spinner data-icon="inline-start" />
-                    Replying
-                  </>
-                ) : (
-                  "Reply"
-                )}
-              </Button>
-            </div>
-          </div>
+          <ReplyForm
+            authorName={comment.authorName}
+            content={replyContent}
+            onContentChange={setReplyContent}
+            pending={createComment.isPending}
+            onSubmit={handleReplySubmit}
+            onCancel={handleReplyCancel}
+          />
         ) : null}
       </div>
       {children.length > 0 ? (
@@ -167,6 +126,121 @@ function CommentNodeView({
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function CommentHeader({
+  authorName,
+  createdAt,
+}: {
+  authorName: string;
+  createdAt: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <Avatar size="sm">
+        <AvatarFallback>{authorName.slice(0, 2).toUpperCase()}</AvatarFallback>
+      </Avatar>
+      <span className="font-medium text-foreground">{authorName}</span>
+      <span aria-hidden>·</span>
+      <span suppressHydrationWarning>{timeago(createdAt)}</span>
+    </div>
+  );
+}
+
+interface CommentActionsProps {
+  comment: Comment;
+  isAuthor: boolean;
+  isDeleting: boolean;
+  onToggleReply: () => void;
+  onDelete: () => void;
+}
+
+function CommentActions({
+  comment,
+  isAuthor,
+  isDeleting,
+  onToggleReply,
+  onDelete,
+}: CommentActionsProps) {
+  return (
+    <div className="flex items-center gap-1">
+      <VoteButtons
+        compact
+        targetType="comment"
+        targetId={comment.id}
+        score={comment.score}
+        myVote={comment.myVote}
+      />
+      <Button
+        variant="ghost"
+        size="xs"
+        className="text-muted-foreground"
+        onClick={onToggleReply}
+      >
+        Reply
+      </Button>
+      {isAuthor ? (
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Delete comment"
+          disabled={isDeleting}
+          onClick={onDelete}
+          className="text-muted-foreground hover:text-destructive"
+        >
+          <Trash2Icon />
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+interface ReplyFormProps {
+  authorName: string;
+  content: string;
+  onContentChange: (value: string) => void;
+  pending: boolean;
+  onSubmit: () => void;
+  onCancel: () => void;
+}
+
+function ReplyForm({
+  authorName,
+  content,
+  onContentChange,
+  pending,
+  onSubmit,
+  onCancel,
+}: ReplyFormProps) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Textarea
+        value={content}
+        onChange={(event) => onContentChange(event.target.value)}
+        placeholder={`Reply to ${authorName}...`}
+        aria-label="Write a reply"
+      />
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          disabled={!content.trim() || pending}
+          onClick={onSubmit}
+        >
+          {pending ? (
+            <>
+              <Spinner data-icon="inline-start" />
+              Replying
+            </>
+          ) : (
+            "Reply"
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

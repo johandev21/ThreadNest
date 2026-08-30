@@ -60,7 +60,7 @@ export function NestHeader({ slug }: { slug: string }) {
 
   const pending = joinNest.isPending || leaveNest.isPending;
 
-  function toggleMembership() {
+  function handleJoinToggle() {
     if (joined) {
       leaveNest.mutate(undefined, {
         onSuccess: () => setJoined(false),
@@ -78,36 +78,61 @@ export function NestHeader({ slug }: { slug: string }) {
         <CardTitle className="text-lg">{nest.title}</CardTitle>
         <CardDescription>n/{nest.slug}</CardDescription>
         <CardAction>
-          {authenticated ? (
-            <Button
-              variant={joined ? "secondary" : "default"}
-              size="sm"
-              disabled={pending}
-              onClick={toggleMembership}
-            >
-              {joined ? "Leave" : "Join"}
-            </Button>
-          ) : (
-            <Button render={<Link href="/login" />} nativeButton={false} variant="outline" size="sm">
-              Sign in to join
-            </Button>
-          )}
+          <MembershipButton
+            authenticated={authenticated}
+            joined={joined}
+            pending={pending}
+            onToggle={handleJoinToggle}
+          />
         </CardAction>
       </CardHeader>
-      {nest.description ? (
-        <CardContent className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+      <CardContent className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        {nest.description ? (
           <p className="w-full">{nest.description}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{nest.memberCount} members</Badge>
-            <Badge variant="outline">{nest.postCount} posts</Badge>
-          </div>
-        </CardContent>
-      ) : (
-        <CardContent className="flex flex-wrap items-center gap-2">
+        ) : null}
+        <div className={nest.description ? "mt-2 flex flex-wrap items-center gap-2" : "flex flex-wrap items-center gap-2"}>
           <Badge variant="secondary">{nest.memberCount} members</Badge>
           <Badge variant="outline">{nest.postCount} posts</Badge>
-        </CardContent>
-      )}
+        </div>
+      </CardContent>
     </Card>
+  );
+}
+
+interface MembershipButtonProps {
+  authenticated: boolean;
+  joined: boolean;
+  pending: boolean;
+  onToggle: () => void;
+}
+
+function MembershipButton({
+  authenticated,
+  joined,
+  pending,
+  onToggle,
+}: MembershipButtonProps) {
+  if (!authenticated) {
+    return (
+      <Button
+        render={<Link href="/login" />}
+        nativeButton={false}
+        variant="outline"
+        size="sm"
+      >
+        Sign in to join
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      variant={joined ? "secondary" : "default"}
+      size="sm"
+      disabled={pending}
+      onClick={onToggle}
+    >
+      {joined ? "Leave" : "Join"}
+    </Button>
   );
 }

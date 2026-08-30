@@ -6,7 +6,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { LogOutIcon, PlusIcon } from "lucide-react";
 
 import { Logo } from "@/components/logo";
-
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -65,46 +64,67 @@ export function Header() {
           {isPending ? (
             <Skeleton className="size-8 rounded-full" />
           ) : user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="rounded-full"
-                    aria-label="Account menu"
-                  />
-                }
-              >
-                <Avatar className="size-7">
-                  {user.image ? <AvatarImage src={user.image} alt={user.name} /> : null}
-                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOutIcon data-icon="inline-start" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <UserMenu user={user} onSignOut={handleSignOut} />
           ) : (
-            <>
-              <Button render={<Link href="/login" />} nativeButton={false} variant="ghost" size="sm">
-                Sign in
-              </Button>
-              <Button render={<Link href="/register" />} nativeButton={false} variant="outline" size="sm">
-                Register
-              </Button>
-            </>
+            <AuthButtons />
           )}
         </div>
       </div>
     </header>
+  );
+}
+
+interface UserMenuProps {
+  user: {
+    name: string;
+    email: string;
+    image?: string | null;
+  };
+  onSignOut: () => void;
+}
+
+function UserMenu({ user, onSignOut }: UserMenuProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-full"
+            aria-label="Account menu"
+          />
+        }
+      >
+        <Avatar className="size-7">
+          {user.image ? <AvatarImage src={user.image} alt={user.name} /> : null}
+          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onSignOut}>
+            <LogOutIcon data-icon="inline-start" />
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function AuthButtons() {
+  return (
+    <>
+      <Button render={<Link href="/login" />} nativeButton={false} variant="ghost" size="sm">
+        Sign in
+      </Button>
+      <Button render={<Link href="/register" />} nativeButton={false} variant="outline" size="sm">
+        Register
+      </Button>
+    </>
   );
 }
 

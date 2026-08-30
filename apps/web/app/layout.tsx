@@ -23,7 +23,11 @@ export const metadata: Metadata = {
   description: "Nested communities for humans",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="en"

@@ -10,5 +10,11 @@
     "db:push": "bun --filter @threadnest/server db:push",
     "db:seed": "bun --filter @threadnest/server db:seed",
     "typecheck": "bun --filter '*' typecheck"
+  },
+  "devDependencies": {
+    "zod": "4.5.4"
+  },
+  "overrides": {
+    "zod": "4.5.4"
   }
 }

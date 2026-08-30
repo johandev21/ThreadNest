@@ -32,6 +32,26 @@ export function UserForm({ mode }: UserFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
+  const copy = isRegister
+    ? {
+        title: "Create your account",
+        description: "Join ThreadNest and start nesting.",
+        submitLabel: "Register",
+        submitPendingLabel: "Creating account",
+        altPrompt: "Already have an account? ",
+        altLinkText: "Sign in",
+        altHref: "/login",
+      }
+    : {
+        title: "Welcome back",
+        description: "Sign in to vote, post and comment.",
+        submitLabel: "Sign in",
+        submitPendingLabel: "Signing in",
+        altPrompt: "New to ThreadNest? ",
+        altLinkText: "Register",
+        altHref: "/register",
+      };
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -63,12 +83,8 @@ export function UserForm({ mode }: UserFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isRegister ? "Create your account" : "Welcome back"}</CardTitle>
-        <CardDescription>
-          {isRegister
-            ? "Join ThreadNest and start nesting."
-            : "Sign in to vote, post and comment."}
-        </CardDescription>
+        <CardTitle>{copy.title}</CardTitle>
+        <CardDescription>{copy.description}</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent>
@@ -121,21 +137,19 @@ export function UserForm({ mode }: UserFormProps) {
             {pending ? (
               <>
                 <Spinner data-icon="inline-start" />
-                {isRegister ? "Creating account" : "Signing in"}
+                {copy.submitPendingLabel}
               </>
-            ) : isRegister ? (
-              "Register"
             ) : (
-              "Sign in"
+              copy.submitLabel
             )}
           </Button>
           <p className="text-sm text-muted-foreground">
-            {isRegister ? "Already have an account? " : "New to ThreadNest? "}
+            {copy.altPrompt}
             <Link
-              href={isRegister ? "/login" : "/register"}
+              href={copy.altHref}
               className="text-primary underline-offset-4 hover:underline"
             >
-              {isRegister ? "Sign in" : "Register"}
+              {copy.altLinkText}
             </Link>
           </p>
         </CardFooter>

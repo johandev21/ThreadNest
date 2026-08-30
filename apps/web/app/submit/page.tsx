@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { LinkIcon, TextIcon } from "lucide-react";
 
 import { authClient } from "@/lib/auth-client";
-import type { PostType } from "@/lib/api";
+import type { Nest, PostType } from "@/lib/api";
 import { useCreatePost, useNests } from "@/lib/queries";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -43,18 +43,26 @@ export default function SubmitPage() {
   const [error, setError] = useState<string | null>(null);
   const createPost = useCreatePost();
 
+  const awaitingSession = isPending || !session?.user;
+
   useEffect(() => {
     if (!isPending && !session?.user) {
       router.replace("/login");
     }
   }, [isPending, session, router]);
 
-  if (isPending || !session?.user) {
+  if (awaitingSession) {
     return (
       <div className="mx-auto flex w-full max-w-xl justify-center px-4 py-16">
         <Spinner className="size-6" />
       </div>
     );
+  }
+
+  function handleTypeChange(value: string[]) {
+    if (value[0] === "text" || value[0] === "link") {
+      setType(value[0]);
+    }
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -86,45 +94,15 @@ export default function SubmitPage() {
         <form onSubmit={handleSubmit}>
           <CardContent>
             <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="submit-nest">Nest</FieldLabel>
-                <Select
-                  value={nestSlug || null}
-                  onValueChange={(value) => setNestSlug(value ?? "")}
-                >
-                  <SelectTrigger id="submit-nest" className="w-full">
-                    <SelectValue placeholder="Choose a nest" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(nests ?? []).map((nest) => (
-                      <SelectItem key={nest.id} value={nest.slug}>
-                        n/{nest.slug}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel>Post type</FieldLabel>
-                <ToggleGroup
-                  variant="outline"
-                  value={[type]}
-                  onValueChange={(value) => {
-                    if (value[0] === "text" || value[0] === "link") {
-                      setType(value[0]);
-                    }
-                  }}
-                >
-                  <ToggleGroupItem value="text" aria-label="Text post">
-                    <TextIcon data-icon="inline-start" />
-                    Text
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="link" aria-label="Link post">
-                    <LinkIcon data-icon="inline-start" />
-                    Link
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </Field>
+              <NestSelectField
+                nests={nests}
+                value={nestSlug}
+                onChange={setNestSlug}
+              />
+              <PostTypeToggle
+                value={type}
+                onChange={handleTypeChange}
+              />
               <Field>
                 <FieldLabel htmlFor="submit-title">Title</FieldLabel>
                 <Input
@@ -136,30 +114,13 @@ export default function SubmitPage() {
                   maxLength={300}
                 />
               </Field>
-              {type === "text" ? (
-                <Field>
-                  <FieldLabel htmlFor="submit-content">Content</FieldLabel>
-                  <Textarea
-                    id="submit-content"
-                    value={content}
-                    onChange={(event) => setContent(event.target.value)}
-                    placeholder="Write your post (optional)"
-                    className="min-h-32"
-                  />
-                </Field>
-              ) : (
-                <Field>
-                  <FieldLabel htmlFor="submit-url">URL</FieldLabel>
-                  <Input
-                    id="submit-url"
-                    type="url"
-                    value={url}
-                    onChange={(event) => setUrl(event.target.value)}
-                    placeholder="https://example.com"
-                    required
-                  />
-                </Field>
-              )}
+              <ContentOrUrlField
+                type={type}
+                content={content}
+                onContentChange={setContent}
+                url={url}
+                onUrlChange={setUrl}
+              />
             </FieldGroup>
             {error ? (
               <Alert variant="destructive" className="mt-4">
@@ -187,5 +148,107 @@ export default function SubmitPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+function NestSelectField({
+  nests,
+  value,
+  onChange,
+}: {
+  nests: Nest[] | undefined;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <Field>
+      <FieldLabel htmlFor="submit-nest">Nest</FieldLabel>
+      <Select
+        value={value || null}
+        onValueChange={(val) => onChange(val ?? "")}
+      >
+        <SelectTrigger id="submit-nest" className="w-full">
+          <SelectValue placeholder="Choose a nest" />
+        </SelectTrigger>
+        <SelectContent>
+          {(nests ?? []).map((nest) => (
+            <SelectItem key={nest.id} value={nest.slug}>
+              n/{nest.slug}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Field>
+  );
+}
+
+function PostTypeToggle({
+  value,
+  onChange,
+}: {
+  value: PostType;
+  onChange: (value: string[]) => void;
+}) {
+  return (
+    <Field>
+      <FieldLabel>Post type</FieldLabel>
+      <ToggleGroup
+        variant="outline"
+        value={[value]}
+        onValueChange={onChange}
+      >
+        <ToggleGroupItem value="text" aria-label="Text post">
+          <TextIcon data-icon="inline-start" />
+          Text
+        </ToggleGroupItem>
+        <ToggleGroupItem value="link" aria-label="Link post">
+          <LinkIcon data-icon="inline-start" />
+          Link
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </Field>
+  );
+}
+
+function ContentOrUrlField({
+  type,
+  content,
+  onContentChange,
+  url,
+  onUrlChange,
+}: {
+  type: PostType;
+  content: string;
+  onContentChange: (value: string) => void;
+  url: string;
+  onUrlChange: (value: string) => void;
+}) {
+  if (type === "text") {
+    return (
+      <Field>
+        <FieldLabel htmlFor="submit-content">Content</FieldLabel>
+        <Textarea
+          id="submit-content"
+          value={content}
+          onChange={(event) => onContentChange(event.target.value)}
+          placeholder="Write your post (optional)"
+          className="min-h-32"
+        />
+      </Field>
+    );
+  }
+
+  return (
+    <Field>
+      <FieldLabel htmlFor="submit-url">URL</FieldLabel>
+      <Input
+        id="submit-url"
+        type="url"
+        value={url}
+        onChange={(event) => onUrlChange(event.target.value)}
+        placeholder="https://example.com"
+        required
+      />
+    </Field>
   );
 }
